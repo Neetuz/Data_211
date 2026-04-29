@@ -1,0 +1,156 @@
+---
+title: "Social_Media_Data (data211)"
+author: "Neetu Shrestha Pradhan"
+date: "2026-04-07"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Loading the libraries:
+```{r}
+library(readxl)
+library(dbplyr)
+library(tidyverse)
+library(ggplot2)
+
+```
+##  Import the social media dataset from Excel:
+```{r}
+Social_Media_Data <- read_excel("C:/Users/amark/OneDrive - MNSCU/data211 spring 2026/Data/Social_Media_Data.xlsx")
+```                                                                                      
+# Quick look at the dataset:
+```{r}
+head(Social_Media_Data )
+str(Social_Media_Data)
+```
+# converting sm_minutes to numeric
+```{r}
+Social_Media_Data $SM_Minutes<- as.numeric(Social_Media_Data $SM_Minutes)
+```
+# converting Earning to numeric
+```{r}
+Social_Media_Data$Earning <- as.numeric(Social_Media_Data$Earning)
+```
+##  Descriptive Statistics
+```{r}
+summary(Social_Media_Data$SM_Minutes)
+summary(Social_Media_Data$Earning)
+```
+
+
+## Social Media Usage vs Earnings Analysis
+
+```{r}
+comparison_summary <- Social_Media_Data %>%
+  group_by(Day_Type) %>%
+  summarise(
+    avg_minutes = mean(SM_Minutes, na.rm = TRUE),
+    avg_earning = mean(Earning, na.rm = TRUE)
+  
+  )
+
+comparison_summary
+```
+
+# Calculating the standard deviation.
+```{r}
+sd_earnings <- sd(Social_Media_Data $Earning)
+print(paste("The Standard Deviation of Earnings is:", round(sd_earnings, 2)))
+
+
+```
+# Using ggplot2 to show the raw data and a prediction (trend) line
+```{r}
+ggplot(Social_Media_Data , aes(x = Date, y = Earning)) +
+  geom_line(color = "green", linewidth = 1) +      # The raw data line
+  geom_point() +                                   # Individual data points
+  geom_smooth(method = "lm", color = "red", linetype = "dashed", se= FALSE) + # The                                                                               prediction trend.
+  labs(title = "Daily Earnings Analysis",
+       subtitle = "Blue = Actual Raw Data | Red Dashed = Predicted Trend",
+       x = "Date", y = "Earnings ($)") +
+  theme_minimal()
+```
+
+##  boxplot to compare social media usage between weekdays and weekends(Minutes comparision)
+```{r}
+library(ggplot2)
+ggplot(Social_Media_Data, aes(x = Day_Type, y = SM_Minutes, fill = Day_Type)) +
+  geom_boxplot() +
+  labs(title = "Social Media Usage: Weekdays vs. Weekends",
+       x = "Type of Day",
+       y = "Minutes Spent") +
+  theme_minimal()
+
+# the box plot compares how much time is spent on social media during weekdays and weekends. It shows the overall distribution, including the median and variability. The visualization suggests that social media usage is generally higher on weekends, with a wider spread of values, while weekdays tend to have lower and more consistent usage.
+```
+
+##  scatterplot to visualize the relationship between social media usage (minutes)
+# and earnings.
+```{r}
+library(ggplot2)
+ggplot(Social_Media_Data, aes(x = SM_Minutes, y = Earning)) +
+  geom_point(aes(color = Day_Type), size = 4) +  # Dots colored by Weekend/Weekday
+  geom_smooth(method = "lm", col = "red") +     # "Trending Line"
+  labs(title = "The Screen Time",
+       x = "Minutes on Social Media",
+       y = "Earnings ($)",
+       caption = "Red line shows the downward trend") +
+  theme_minimal()
+# This scatter plot shows the relationship between time spent on social media and earnings. Each point represents a day, with different colors for weekdays and weekends. The red trend line slopes downward, indicating a negative relationship between the two variables.
+```
+##  Hypothesis Test: T-Test (Weekday vs Weekend Usage)
+$\mu_W$ = mean social media usage on Weekdays
+$\mu_E$ = mean social media usage on Weekends
+$H_0: \mu_W = \mu_E$
+$H_a: \mu_W \ne \mu_E$
+```{r}
+t_test_result <- t.test(
+  SM_Minutes ~ Day_Type,
+  data = Social_Media_Data
+)
+
+t_test_result
+
+#The results show a strong negative relationship with r=−0.9055, meaning that higher social media usage is associated with lower earnings. The p-value is 1.486×10^−11, which is much smaller than 0.05, so we reject the null hypothesis and conclude that the relationship is statistically significant. The confidence interval [−0.9550,−0.8067] further supports this strong negative association. Overall, the results suggest that as social media usage increases, daily earnings tend to decrease in a consistent and meaningful way.
+
+```
+## Correlation Test
+
+$\rho$ = The linear relationship between social media usage and earnings.
+$H_0:\rho = 0$(There is no linear relationship between social media usage and earnings
+$H_a:\rho < 0$(There is a significant high linear relationship between social media usage and earnings)
+
+
+```{r}
+cor.test(Social_Media_Data$SM_Minutes,
+         Social_Media_Data$Earning,
+         alternative = "less")
+
+#The results show a strong negative relationship with r=−0.9055, meaning that higher social media usage is associated with lower earnings. The p-value is 1.486×10^−11, which is much smaller than 0.05, so we reject the null hypothesis and conclude that the relationship is statistically significant. The confidence interval [−0.9550,−0.8067] further supports this strong negative association. Overall, the results suggest that as social media usage increases, daily earnings tend to decrease in a consistent and meaningful way.
+```
+## Linear Regression: Does Social Media Affect Earnings?
+
+
+# Parameter
+$\beta_0 $ = predicted earning when SM_Minutes = 0
+$\beta_1 $= slope (effect of SM_Minutes on Earnings)
+$H_0: \beta_1 = 0$ (no effect)
+$H_a: \beta_1 \ne 0$ (there is an effect)
+```{r}
+Result <- lm(Earning ~ SM_Minutes, data = Social_Media_Data)
+summary(Result)
+
+#The regression model shows the equation: Earning=4.9909−0.01598(SM_Minutes).The intercept is 4.9909, meaning expected earnings are about $4.99 when social media usage is 0 minutes. The slope is -0.01598, showing that earnings decrease by about $0.016 for each additional minute of social media use.The model is statistically significant with p = 1.49 × 10^-11, and it explains about 82% of the variation in earnings (R² = 0.8199), indicating a strong negative relationship between social media usage and earnings.
+```
+
+##  Overall Conclusion
+```{r}
+#The results show that increased social media usage does not lead to higher earnings. Instead, there is a strong negative relationship between screen time and daily micro-earnings, meaning that more time spent on social media is associated with lower productivity.From my point of view, this suggests that the issue is not just reducing screen time but using it more wisely. Focusing on quality and meaningful content rather than passive scrolling is more important for improving productivity and earnings.
+
+```
+
+
